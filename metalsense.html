@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MetalSense — Smart Water Quality Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --green-deep: #2E7D32;
+  --green-mid: #388E3C;
+  --green-light: #A5D6A7;
+  --green-pale: #F1F8E9;
+  --green-bg: #E8F5E9;
+  --blue: #0288D1;
+  --blue-light: #B3E5FC;
+  --yellow: #FBC02D;
+  --yellow-bg: #FFFDE7;
+  --red: #D32F2F;
+  --red-light: #FFCDD2;
+  --white: #ffffff;
+  --gray-100: #F5F5F5;
+  --gray-200: #EEEEEE;
+  --gray-300: #E0E0E0;
+  --gray-500: #9E9E9E;
+  --gray-700: #616161;
+  --gray-900: #212121;
+  --text: #1B3A1C;
+  --radius: 16px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 24px rgba(46,125,50,0.10);
+  --shadow-lg: 0 8px 48px rgba(46,125,50,0.15);
+  --transition: 0.22s cubic-bezier(0.4,0,0.2,1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--green-pale);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── BACKGROUND ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 10% 20%, rgba(165,214,167,0.28) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 60% at 90% 80%, rgba(2,136,209,0.08) 0%, transparent 70%),
+    linear-gradient(160deg, #F1F8E9 0%, #E8F5E9 50%, #F1F8E9 100%);
+  z-index: -1;
+}
+
+/* ── HEADER ── */
+.header {
+  background: linear-gradient(135deg, var(--green-deep) 0%, var(--green-mid) 100%);
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.header::before {
+  content: '';
+  position: absolute;
+  top: -60%; left: -10%;
+  width: 60%; height: 200%;
+  background: radial-gradient(ellipse, rgba(255,255,255,0.07) 0%, transparent 70%);
+  transform: rotate(-15deg);
+}
+
+.header::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--green-light), var(--blue), var(--green-light));
+  opacity: 0.6;
+}
+
+.header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 36px 32px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.logo-area {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.logo-icon {
+  width: 56px; height: 56px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  border: 1.5px solid rgba(255,255,255,0.25);
+  backdrop-filter: blur(8px);
+}
+
+.logo-text h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+.logo-text p {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.75);
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+
+.header-badge {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 24px;
+  padding: 8px 18px;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.9);
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  backdrop-filter: blur(8px);
+}
+
+/* ── LAYOUT ── */
+.main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 36px 24px 64px;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 28px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .main { grid-template-columns: 1fr; }
+  .header-inner { flex-direction: column; align-items: flex-start; }
+}
+
+/* ── CARDS ── */
+.card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(46,125,50,0.08);
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--gray-200);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--green-deep);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-body { padding: 24px; }
+
+/* ── SAMPLE INFO ── */
+.sample-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.field-group { display: flex; flex-direction: column; gap: 6px; }
+
+.field-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--gray-700);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.field-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.92rem;
+  color: var(--text);
+  background: var(--gray-100);
+  outline: none;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.field-input:focus {
+  border-color: var(--green-deep);
+  background: #fff;
+}
+
+/* ── METALS TABLE ── */
+.metals-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 44px;
+  gap: 10px;
+  padding: 0 0 8px;
+  border-bottom: 1.5px solid var(--green-pale);
+  margin-bottom: 10px;
+}
+
+.metals-header span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.metal-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 44px;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--gray-200);
+  animation: slideIn 0.28s ease;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.metal-row:last-child { border-bottom: none; }
+
+select.field-input {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23616161' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
+}
+
+.input-conc { font-family: 'DM Mono', monospace; font-size: 0.88rem; }
+.input-limit { font-family: 'DM Mono', monospace; font-size: 0.88rem; background: var(--green-pale); }
+
+.btn-remove {
+  width: 36px; height: 36px;
+  border: none;
+  background: var(--red-light);
+  color: var(--red);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem;
+  transition: background var(--transition), transform var(--transition);
+  flex-shrink: 0;
+}
+
+.btn-remove:hover { background: var(--red); color: #fff; transform: scale(1.08); }
+
+/* ── BUTTONS ── */
+.btn-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 11px 22px;
+  border: none;
+  border-radius: 100px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 7px;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--green-deep), var(--green-mid));
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(46,125,50,0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(46,125,50,0.4);
+}
+
+.btn-primary:active { transform: translateY(0); }
+
+.btn-secondary {
+  background: var(--green-pale);
+  color: var(--green-deep);
+  border: 1.5px solid var(--green-light);
+}
+
+.btn-secondary:hover {
+  background: var(--green-light);
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--blue);
+  border: 1.5px solid var(--blue-light);
+}
+
+.btn-outline:hover { background: var(--blue-light); }
+
+/* ── RIGHT SIDEBAR ── */
+.sidebar { display: flex; flex-direction: column; gap: 20px; }
+
+/* ── HMPI RESULT ── */
+.result-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.result-card::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 160px; height: 160px;
+  border-radius: 50%;
+  opacity: 0.07;
+  transition: background var(--transition);
+}
+
+.result-card.safe::before   { background: var(--green-deep); }
+.result-card.moderate::before { background: var(--yellow); }
+.result-card.critical::before { background: var(--red); }
+
+.hmpi-display {
+  text-align: center;
+  padding: 28px 20px 20px;
+}
+
+.hmpi-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--gray-500);
+  margin-bottom: 8px;
+}
+
+.hmpi-value {
+  font-family: 'Playfair Display', serif;
+  font-size: 4.5rem;
+  font-weight: 900;
+  line-height: 1;
+  transition: color var(--transition);
+  color: var(--gray-300);
+}
+
+.hmpi-value.safe     { color: var(--green-deep); }
+.hmpi-value.moderate { color: var(--yellow); }
+.hmpi-value.critical { color: var(--red); }
+
+.hmpi-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 6px 18px;
+  border-radius: 100px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.hmpi-status.safe     { background: #E8F5E9; color: var(--green-deep); }
+.hmpi-status.moderate { background: var(--yellow-bg); color: #F57F17; }
+.hmpi-status.critical { background: #FFEBEE; color: var(--red); }
+.hmpi-status.empty    { background: var(--gray-200); color: var(--gray-500); }
+
+/* ── INSIGHTS ── */
+.insights-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.insight-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  animation: slideIn 0.3s ease;
+}
+
+.insight-item.info    { background: var(--blue-light); color: #01579B; }
+.insight-item.warn    { background: var(--yellow-bg); color: #F57F17; }
+.insight-item.danger  { background: #FFEBEE; color: var(--red); }
+.insight-item.success { background: #E8F5E9; color: var(--green-deep); }
+
+.insight-icon { font-size: 1rem; margin-top: 1px; flex-shrink: 0; }
+
+/* ── CHART ── */
+.chart-wrap {
+  position: relative;
+  height: 240px;
+  padding: 8px 0 0;
+}
+
+/* ── CALC MODAL ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: #fff;
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 640px;
+  max-height: 82vh;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  animation: modalIn 0.28s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+@keyframes modalIn {
+  from { transform: scale(0.92) translateY(20px); opacity: 0; }
+  to   { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.modal-header {
+  padding: 20px 24px;
+  background: linear-gradient(135deg, var(--green-deep), var(--green-mid));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-header h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.15rem;
+  color: #fff;
+  font-weight: 700;
+}
+
+.btn-close {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: #fff;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background var(--transition);
+}
+
+.btn-close:hover { background: rgba(255,255,255,0.35); }
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  max-height: calc(82vh - 72px);
+}
+
+.formula-box {
+  background: var(--green-pale);
+  border: 1.5px solid var(--green-light);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  font-size: 0.85rem;
+  color: var(--green-deep);
+}
+
+.formula-box p { margin-bottom: 6px; line-height: 1.7; }
+.formula-box p:last-child { margin-bottom: 0; }
+.formula-box code { font-family: 'DM Mono', monospace; background: rgba(46,125,50,0.1); padding: 1px 5px; border-radius: 4px; }
+
+.calc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83rem;
+  margin-bottom: 20px;
+}
+
+.calc-table th {
+  background: var(--green-deep);
+  color: #fff;
+  padding: 9px 12px;
+  text-align: left;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.calc-table th:first-child { border-radius: 6px 0 0 0; }
+.calc-table th:last-child  { border-radius: 0 6px 0 0; }
+
+.calc-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--gray-200);
+  font-family: 'DM Mono', monospace;
+  color: var(--gray-900);
+}
+
+.calc-table tr:nth-child(even) td { background: var(--green-pale); }
+.calc-table tr:last-child td { border-bottom: none; }
+
+.calc-summary {
+  background: linear-gradient(135deg, var(--green-deep), var(--green-mid));
+  border-radius: var(--radius-sm);
+  padding: 16px 20px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.calc-summary .label { font-size: 0.88rem; opacity: 0.85; }
+.calc-summary .val { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; }
+
+/* ── CSV UPLOAD ── */
+.upload-zone {
+  border: 2px dashed var(--green-light);
+  border-radius: var(--radius-sm);
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+  background: var(--green-pale);
+}
+
+.upload-zone:hover { border-color: var(--green-deep); background: var(--green-bg); }
+.upload-zone p { font-size: 0.85rem; color: var(--gray-700); margin-top: 6px; }
+.upload-zone .icon { font-size: 2rem; }
+#csvInput { display: none; }
+
+/* ── DOWNLOAD ── */
+.download-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+/* ── STATUS BANNER ── */
+.status-banner {
+  display: none;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  font-weight: 500;
+  margin-top: 12px;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-banner.show { display: flex; }
+.status-banner.error { background: #FFEBEE; color: var(--red); }
+.status-banner.success { background: #E8F5E9; color: var(--green-deep); }
+
+/* ── PLACEHOLDER ── */
+.placeholder-msg {
+  text-align: center;
+  padding: 28px 16px;
+  color: var(--gray-500);
+  font-size: 0.88rem;
+  line-height: 1.7;
+}
+
+.placeholder-msg .big { font-size: 2rem; margin-bottom: 8px; }
+
+/* ── FOOTER ── */
+.footer {
+  text-align: center;
+  padding: 20px;
+  font-size: 0.78rem;
+  color: var(--gray-500);
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 640px) {
+  .metals-header, .metal-row { grid-template-columns: 1.8fr 0.9fr 0.9fr 36px; }
+  .hmpi-value { font-size: 3.5rem; }
+  .card-body { padding: 16px; }
+  .btn { padding: 10px 16px; font-size: 0.85rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-inner">
+    <div class="logo-area">
+      <div class="logo-icon">💧</div>
+      <div class="logo-text">
+        <h1>MetalSense</h1>
+        <p>Smart Water Quality Analysis</p>
+      </div>
+    </div>
+    <div class="header-badge">🌿 WHO Guidelines Based</div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- LEFT: INPUT PANEL -->
+  <div>
+
+    <!-- Sample Info -->
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-header">
+        <span class="card-title">📍 Sample Information</span>
+      </div>
+      <div class="card-body">
+        <div class="sample-row">
+          <div class="field-group">
+            <label class="field-label">Location / Sample Name</label>
+            <input type="text" id="sampleName" class="field-input" placeholder="e.g., Borewell Site A">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Sample Date</label>
+            <input type="date" id="sampleDate" class="field-input">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metal Inputs -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">🔬 Heavy Metal Concentrations</span>
+        <button class="btn btn-secondary" onclick="addMetalRow()" style="padding:7px 14px;font-size:0.82rem;">+ Add Metal</button>
+      </div>
+      <div class="card-body">
+
+        <!-- CSV Upload -->
+        <div class="upload-zone" onclick="document.getElementById('csvInput').click()">
+          <div class="icon">📂</div>
+          <strong>Upload CSV File</strong>
+          <p>Format: Metal, Concentration(mg/L) — or enter manually below</p>
+          <input type="file" id="csvInput" accept=".csv" onchange="loadCSV(event)">
+        </div>
+
+        <div id="statusBanner" class="status-banner"></div>
+
+        <div style="margin-top:20px;">
+          <div class="metals-header">
+            <span>Metal</span>
+            <span>Conc. (mg/L)</span>
+            <span>Limit (mg/L)</span>
+            <span></span>
+          </div>
+          <div id="metalsContainer"></div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="calculate()">⚡ Calculate HMPI</button>
+          <button class="btn btn-secondary" onclick="resetAll()">↺ Reset</button>
+          <button class="btn btn-outline" onclick="openCalcModal()" id="checkCalcBtn" style="display:none;">🔍 Check Calculation</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="card" style="margin-top:20px;" id="chartCard">
+      <div class="card-header">
+        <span class="card-title">📊 Concentration vs Permissible Limit</span>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap">
+          <canvas id="metalChart"></canvas>
+        </div>
+        <div id="chartPlaceholder" class="placeholder-msg">
+          <div class="big">📈</div>
+          Chart will appear after calculation
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: RESULTS SIDEBAR -->
+  <div class="sidebar">
+
+    <!-- HMPI Result -->
+    <div class="card result-card" id="resultCard">
+      <div class="card-header">
+        <span class="card-title">🎯 HMPI Result</span>
+      </div>
+      <div class="hmpi-display">
+        <div class="hmpi-label">Heavy Metal Pollution Index</div>
+        <div class="hmpi-value" id="hmpiValue">—</div>
+        <div>
+          <span class="hmpi-status empty" id="hmpiStatus">⏳ Awaiting Data</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Insights -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">💡 Smart Insights</span>
+      </div>
+      <div class="card-body" style="padding-top:12px;">
+        <div id="insightsList">
+          <div class="placeholder-msg" style="padding:16px 8px;">
+            <div class="big">🔬</div>
+            Enter metal concentrations and click Calculate to get intelligent insights about your water sample.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Download -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📄 Export Report</span>
+      </div>
+      <div class="card-body">
+        <button class="btn btn-primary download-btn" onclick="downloadReport()">⬇ Download Summary Report</button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- CALCULATION MODAL -->
+<div class="modal-overlay" id="calcModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🧮 HMPI Calculation Breakdown</h3>
+      <button class="btn-close" onclick="closeCalcModal()">✕</button>
+    </div>
+    <div class="modal-body" id="calcModalBody"></div>
+  </div>
+</div>
+
+<footer class="footer">
+  MetalSense · WHO Guideline Values · Built for environmental assessment
+</footer>
+
+<script>
+// ── DATA ──
+const METALS_DB = [
+  { name: "Lead (Pb)",         symbol: "Pb", limit: 0.01 },
+  { name: "Cadmium (Cd)",      symbol: "Cd", limit: 0.003 },
+  { name: "Iron (Fe)",         symbol: "Fe", limit: 0.3 },
+  { name: "Zinc (Zn)",         symbol: "Zn", limit: 3.0 },
+  { name: "Arsenic (As)",      symbol: "As", limit: 0.01 },
+  { name: "Mercury (Hg)",      symbol: "Hg", limit: 0.006 },
+  { name: "Chromium (Cr)",     symbol: "Cr", limit: 0.05 },
+  { name: "Copper (Cu)",       symbol: "Cu", limit: 2.0 },
+  { name: "Nickel (Ni)",       symbol: "Ni", limit: 0.07 },
+  { name: "Manganese (Mn)",    symbol: "Mn", limit: 0.4 },
+  { name: "Selenium (Se)",     symbol: "Se", limit: 0.04 },
+  { name: "Barium (Ba)",       symbol: "Ba", limit: 1.3 },
+  { name: "Fluoride (F)",      symbol: "F",  limit: 1.5 },
+];
+
+let rowId = 0;
+let chartInstance = null;
+let lastResult = null;
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('sampleDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('chartPlaceholder').style.display = 'block';
+  document.getElementById('metalChart').style.display = 'none';
+  addMetalRow('Lead (Pb)');
+  addMetalRow('Cadmium (Cd)');
+  addMetalRow('Iron (Fe)');
+});
+
+// ── ADD ROW ──
+function addMetalRow(defaultMetal = '') {
+  const id = ++rowId;
+  const metal = METALS_DB.find(m => m.name === defaultMetal) || null;
+  const container = document.getElementById('metalsContainer');
+
+  const row = document.createElement('div');
+  row.className = 'metal-row';
+  row.id = `row-${id}`;
+
+  const options = METALS_DB.map(m =>
+    `<option value="${m.name}" ${m.name === defaultMetal ? 'selected' : ''}>${m.name}</option>`
+  ).join('');
+
+  row.innerHTML = `
+    <select class="field-input" id="metal-${id}" onchange="updateLimit(${id})">
+      ${options}
+    </select>
+    <input type="number" class="field-input input-conc" id="conc-${id}"
+      placeholder="0.000" step="0.001" min="0">
+    <input type="number" class="field-input input-limit" id="limit-${id}"
+      step="0.0001" min="0.0001"
+      value="${metal ? metal.limit : METALS_DB[0].limit}"
+      title="WHO permissible limit">
+    <button class="btn-remove" onclick="removeRow(${id})" title="Remove">✕</button>
+  `;
+
+  container.appendChild(row);
+}
+
+function updateLimit(id) {
+  const metalName = document.getElementById(`metal-${id}`).value;
+  const metal = METALS_DB.find(m => m.name === metalName);
+  if (metal) document.getElementById(`limit-${id}`).value = metal.limit;
+}
+
+function removeRow(id) {
+  const row = document.getElementById(`row-${id}`);
+  if (row) row.remove();
+}
+
+// ── CALCULATE ──
+function calculate() {
+  const rows = document.querySelectorAll('.metal-row');
+  if (!rows.length) { showBanner('Please add at least one metal entry.', 'error'); return; }
+
+  const metals = [];
+  let valid = true;
+
+  rows.forEach(row => {
+    const id = row.id.split('-')[1];
+    const name = document.getElementById(`metal-${id}`).value;
+    const conc = parseFloat(document.getElementById(`conc-${id}`).value);
+    const limit = parseFloat(document.getElementById(`limit-${id}`).value);
+
+    if (isNaN(conc) || conc < 0) { valid = false; return; }
+    if (isNaN(limit) || limit <= 0) { valid = false; return; }
+
+    metals.push({ name, conc, limit, id });
+  });
+
+  if (!valid) { showBanner('Please enter valid positive concentration values for all metals.', 'error'); return; }
+  hideBanner();
+
+  // ── HMPI FORMULA ──
+  metals.forEach(m => {
+    m.Qi = (m.conc / m.limit) * 100;
+    m.Wi = 1 / m.limit;
+    m.QiWi = m.Qi * m.Wi;
+  });
+
+  const sumQiWi = metals.reduce((s, m) => s + m.QiWi, 0);
+  const sumWi   = metals.reduce((s, m) => s + m.Wi, 0);
+  const HMPI = sumQiWi / sumWi;
+
+  lastResult = { metals, sumQiWi, sumWi, HMPI };
+
+  // ── DISPLAY HMPI ──
+  const valEl = document.getElementById('hmpiValue');
+  const statusEl = document.getElementById('hmpiStatus');
+  const cardEl = document.getElementById('resultCard');
+
+  valEl.textContent = HMPI.toFixed(2);
+
+  let cls, label, icon;
+  if (HMPI < 100) {
+    cls = 'safe'; label = 'Safe'; icon = '✅';
+  } else if (HMPI <= 200) {
+    cls = 'moderate'; label = 'Moderate Pollution'; icon = '⚠️';
+  } else {
+    cls = 'critical'; label = 'Critical Pollution'; icon = '🚨';
+  }
+
+  valEl.className = `hmpi-value ${cls}`;
+  statusEl.className = `hmpi-status ${cls}`;
+  statusEl.textContent = `${icon} ${label}`;
+  cardEl.className = `card result-card ${cls}`;
+
+  // ── INSIGHTS ──
+  generateInsights(metals, HMPI, cls);
+
+  // ── CHART ──
+  renderChart(metals);
+
+  // ── SHOW CHECK CALC BTN ──
+  document.getElementById('checkCalcBtn').style.display = 'flex';
+}
+
+// ── INSIGHTS ──
+function generateInsights(metals, HMPI, cls) {
+  const list = document.getElementById('insightsList');
+  list.innerHTML = '';
+
+  const exceeded = metals.filter(m => m.conc > m.limit);
+  const critical = metals.filter(m => m.Qi > 200);
+  const moderate = metals.filter(m => m.Qi > 100 && m.Qi <= 200);
+  const highest  = [...metals].sort((a,b) => b.Qi - a.Qi)[0];
+
+  const items = [];
+
+  // Overall status
+  if (cls === 'safe') {
+    items.push({ type: 'success', icon: '✅', text: `Water quality is <strong>Safe</strong>. HMPI of ${HMPI.toFixed(2)} is within acceptable limits.` });
+  } else if (cls === 'moderate') {
+    items.push({ type: 'warn', icon: '⚠️', text: `Water quality is <strong>Moderately Polluted</strong>. Treatment recommended before consumption.` });
+  } else {
+    items.push({ type: 'danger', icon: '🚨', text: `Water quality is <strong>Critically Polluted</strong>. Unsafe for drinking — immediate remediation required.` });
+  }
+
+  // Most critical pollutant
+  if (highest && highest.Qi > 0) {
+    const ratio = (highest.conc / highest.limit).toFixed(2);
+    const type = highest.Qi > 100 ? 'danger' : 'info';
+    items.push({ type, icon: '🔬', text: `Most dominant pollutant: <strong>${highest.name}</strong> — ${ratio}× the permissible limit (Qi = ${highest.Qi.toFixed(1)})` });
+  }
+
+  // Metals exceeding limits
+  critical.forEach(m => {
+    items.push({ type: 'danger', icon: '⛔', text: `<strong>${m.name}</strong> critically exceeds permissible limits — measured ${m.conc} mg/L vs limit ${m.limit} mg/L` });
+  });
+
+  moderate.forEach(m => {
+    if (!critical.includes(m)) {
+      items.push({ type: 'warn', icon: '⚠️', text: `<strong>${m.name}</strong> exceeds permissible limits — measured ${m.conc} mg/L vs limit ${m.limit} mg/L` });
+    }
+  });
+
+  exceeded.filter(m => m.Qi <= 100).forEach(m => {
+    items.push({ type: 'warn', icon: '📊', text: `<strong>${m.name}</strong> slightly above limit — measured ${m.conc} mg/L vs ${m.limit} mg/L allowed` });
+  });
+
+  const safe = metals.filter(m => m.conc <= m.limit);
+  if (safe.length && exceeded.length < metals.length) {
+    items.push({ type: 'success', icon: '✔️', text: `${safe.length} metal(s) within safe range: ${safe.map(m=>m.name).join(', ')}` });
+  }
+
+  // Recommendation
+  if (cls !== 'safe') {
+    items.push({ type: 'info', icon: '💡', text: `Recommendation: Conduct detailed hydrogeological study and deploy appropriate water treatment systems.` });
+  }
+
+  items.forEach(item => {
+    const el = document.createElement('div');
+    el.className = `insight-item ${item.type}`;
+    el.innerHTML = `<span class="insight-icon">${item.icon}</span><span>${item.text}</span>`;
+    list.appendChild(el);
+  });
+}
+
+// ── CHART ──
+function renderChart(metals) {
+  const placeholder = document.getElementById('chartPlaceholder');
+  const canvas      = document.getElementById('metalChart');
+  placeholder.style.display = 'none';
+  canvas.style.display = 'block';
+
+  const labels = metals.map(m => {
+    const sym = METALS_DB.find(d => d.name === m.name);
+    return sym ? m.name.split('(')[1]?.replace(')','') || m.name : m.name;
+  });
+
+  const concData  = metals.map(m => m.conc);
+  const limitData = metals.map(m => m.limit);
+
+  const colors = metals.map(m =>
+    m.conc > m.limit * 2 ? 'rgba(211,47,47,0.82)' :
+    m.conc > m.limit     ? 'rgba(251,192,45,0.85)' :
+                           'rgba(46,125,50,0.80)'
+  );
+  const borderColors = metals.map(m =>
+    m.conc > m.limit * 2 ? '#D32F2F' :
+    m.conc > m.limit     ? '#FBC02D' :
+                           '#2E7D32'
+  );
+
+  if (chartInstance) chartInstance.destroy();
+
+  chartInstance = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Measured (mg/L)',
+          data: concData,
+          backgroundColor: colors,
+          borderColor: borderColors,
+          borderWidth: 2,
+          borderRadius: 6,
+          borderSkipped: false,
+        },
+        {
+          label: 'WHO Limit (mg/L)',
+          data: limitData,
+          type: 'line',
+          borderColor: 'rgba(2,136,209,0.7)',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          borderDash: [5, 4],
+          pointRadius: 4,
+          pointBackgroundColor: '#0288D1',
+          tension: 0.1,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: { font: { family: 'DM Sans', size: 11 }, color: '#616161' }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y} mg/L`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: '#F1F8E9' },
+          ticks: { font: { family: 'DM Mono', size: 10 }, color: '#9E9E9E' }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { font: { family: 'DM Sans', size: 11 }, color: '#616161' }
+        }
+      }
+    }
+  });
+}
+
+// ── CALC MODAL ──
+function openCalcModal() {
+  if (!lastResult) return;
+  const { metals, sumQiWi, sumWi, HMPI } = lastResult;
+
+  let tableRows = metals.map(m => `
+    <tr>
+      <td>${m.name}</td>
+      <td>${m.conc}</td>
+      <td>${m.limit}</td>
+      <td>${m.Qi.toFixed(4)}</td>
+      <td>${m.Wi.toFixed(6)}</td>
+      <td>${m.QiWi.toFixed(4)}</td>
+    </tr>
+  `).join('');
+
+  document.getElementById('calcModalBody').innerHTML = `
+    <div class="formula-box">
+      <p><strong>Formula:</strong></p>
+      <p><code>Qi = (Ci / Si) × 100</code> — sub-index for each metal</p>
+      <p><code>Wi = 1 / Si</code> — weight for each metal</p>
+      <p><code>HMPI = Σ(Qi × Wi) / Σ(Wi)</code> — weighted average</p>
+      <p style="margin-top:8px;font-size:0.8rem;opacity:0.75;">Where Ci = measured concentration, Si = WHO permissible limit</p>
+    </div>
+
+    <table class="calc-table">
+      <thead>
+        <tr>
+          <th>Metal</th><th>Ci (mg/L)</th><th>Si (mg/L)</th>
+          <th>Qi</th><th>Wi</th><th>Qi × Wi</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tableRows}
+        <tr style="font-weight:600;">
+          <td colspan="4" style="text-align:right;color:#2E7D32;">Σ (totals):</td>
+          <td style="color:#2E7D32;">${sumWi.toFixed(4)}</td>
+          <td style="color:#2E7D32;">${sumQiWi.toFixed(4)}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="calc-summary">
+      <div>
+        <div class="label">HMPI = ${sumQiWi.toFixed(4)} ÷ ${sumWi.toFixed(4)}</div>
+      </div>
+      <div class="val">${HMPI.toFixed(2)}</div>
+    </div>
+  `;
+
+  document.getElementById('calcModal').classList.add('open');
+}
+
+function closeCalcModal() {
+  document.getElementById('calcModal').classList.remove('open');
+}
+
+document.getElementById('calcModal').addEventListener('click', function(e) {
+  if (e.target === this) closeCalcModal();
+});
+
+// ── CSV UPLOAD ──
+function loadCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const lines = e.target.result.trim().split('\n');
+    const container = document.getElementById('metalsContainer');
+    container.innerHTML = '';
+    rowId = 0;
+    let loaded = 0;
+
+    lines.forEach(line => {
+      const parts = line.split(',').map(p => p.trim());
+      if (parts.length >= 2) {
+        const metalName = parts[0];
+        const conc = parseFloat(parts[1]);
+        if (!isNaN(conc)) {
+          addMetalRow(metalName);
+          const id = rowId;
+          setTimeout(() => {
+            document.getElementById(`conc-${id}`).value = conc;
+            if (parts[2]) document.getElementById(`limit-${id}`).value = parseFloat(parts[2]);
+          }, 10);
+          loaded++;
+        }
+      }
+    });
+
+    showBanner(`✅ Loaded ${loaded} metal entries from CSV`, 'success');
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ── RESET ──
+function resetAll() {
+  document.getElementById('metalsContainer').innerHTML = '';
+  rowId = 0;
+  document.getElementById('hmpiValue').textContent = '—';
+  document.getElementById('hmpiValue').className = 'hmpi-value';
+  document.getElementById('hmpiStatus').className = 'hmpi-status empty';
+  document.getElementById('hmpiStatus').textContent = '⏳ Awaiting Data';
+  document.getElementById('resultCard').className = 'card result-card';
+  document.getElementById('insightsList').innerHTML = `
+    <div class="placeholder-msg" style="padding:16px 8px;">
+      <div class="big">🔬</div>
+      Enter metal concentrations and click Calculate to get insights.
+    </div>`;
+  document.getElementById('chartPlaceholder').style.display = 'block';
+  document.getElementById('metalChart').style.display = 'none';
+  document.getElementById('checkCalcBtn').style.display = 'none';
+  if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+  lastResult = null;
+  hideBanner();
+  addMetalRow('Lead (Pb)');
+  addMetalRow('Cadmium (Cd)');
+  addMetalRow('Iron (Fe)');
+}
+
+// ── DOWNLOAD REPORT ──
+function downloadReport() {
+  const sample = document.getElementById('sampleName').value || 'Unknown Site';
+  const date   = document.getElementById('sampleDate').value || new Date().toISOString().split('T')[0];
+
+  let content = `METALSENSE — WATER QUALITY ANALYSIS REPORT\n`;
+  content += `${'='.repeat(50)}\n\n`;
+  content += `Sample Location : ${sample}\n`;
+  content += `Analysis Date   : ${date}\n\n`;
+
+  if (lastResult) {
+    const { metals, sumQiWi, sumWi, HMPI } = lastResult;
+    const cls = HMPI < 100 ? 'SAFE' : HMPI <= 200 ? 'MODERATE POLLUTION' : 'CRITICAL POLLUTION';
+
+    content += `HMPI VALUE : ${HMPI.toFixed(2)}\n`;
+    content += `WATER STATUS : ${cls}\n\n`;
+
+    content += `${'─'.repeat(50)}\nMETAL ANALYSIS DETAILS\n${'─'.repeat(50)}\n`;
+    content += `${'Metal'.padEnd(20)} ${'Ci'.padEnd(12)} ${'Si'.padEnd(12)} ${'Qi'.padEnd(12)} ${'Wi'.padEnd(14)} ${'Qi×Wi'}\n`;
+    metals.forEach(m => {
+      content += `${m.name.padEnd(20)} ${String(m.conc).padEnd(12)} ${String(m.limit).padEnd(12)} ${m.Qi.toFixed(2).padEnd(12)} ${m.Wi.toFixed(6).padEnd(14)} ${m.QiWi.toFixed(4)}\n`;
+    });
+
+    content += `\nΣWi = ${sumWi.toFixed(4)}   ΣQiWi = ${sumQiWi.toFixed(4)}\n`;
+    content += `HMPI = ${sumQiWi.toFixed(4)} / ${sumWi.toFixed(4)} = ${HMPI.toFixed(2)}\n\n`;
+
+    content += `CLASSIFICATION SCALE\n`;
+    content += `  HMPI < 100   → Safe\n`;
+    content += `  100 ≤ HMPI ≤ 200 → Moderate Pollution\n`;
+    content += `  HMPI > 200   → Critical Pollution\n\n`;
+    content += `Based on WHO Drinking Water Guidelines.\nGenerated by MetalSense — Smart Water Quality Analysis\n`;
+  } else {
+    content += `No analysis data found. Please run a calculation first.\n`;
+  }
+
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url  = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `MetalSense_Report_${sample.replace(/\s+/g,'_')}_${date}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── HELPERS ──
+function showBanner(msg, type) {
+  const el = document.getElementById('statusBanner');
+  el.textContent = msg;
+  el.className = `status-banner show ${type}`;
+}
+
+function hideBanner() {
+  document.getElementById('statusBanner').className = 'status-banner';
+}
+</script>
+</body>
+</html>
